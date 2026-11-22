@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>三视图工坊 · 机械制图入门</title>
+<link rel="stylesheet" href="./styles.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three.module.js",
+    "three/addons/": "/vendor/jsm/",
+    "three-bvh-csg": "/vendor/csg/index.module.js",
+    "three-mesh-bvh": "/vendor/meshbvh/index.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- ============================================ 顶部导航 -->
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◱</span>
+    <span class="brand-text">三视图工坊<em>机械制图入门 · 投影与形体</em></span>
+  </div>
+  <nav class="modes" role="tablist">
+    <button class="mode-btn is-active" data-nav="learn" role="tab">学习模式</button>
+    <button class="mode-btn" data-nav="methods" role="tab">原理方法</button>
+    <button class="mode-btn" data-nav="bank" role="tab">错题本<i id="bankCount" class="count">0</i></button>
+  </nav>
+  <div class="anon" title="本站免注册：数据绑定在本机匿名 ID 上">
+    <span class="dot" id="anonDot"></span><span id="anonLabel">匿名身份检查中…</span>
+  </div>
+</header>
+
+<main>
+<!-- ============================================ 学习模式 -->
+<section id="view-learn" class="view">
+
+  <!-- 首页：两个功能入口 -->
+  <div id="home" class="home">
+    <div class="home-intro">
+      <p class="eyebrow">工程制图学习台</p>
+      <h1 class="home-title">从三视图到立体</h1>
+      <p class="home-sub">上传图纸，框选主视、俯视和左视区域。系统会同步整理视图、讲解投影关系，并生成可旋转的立体近似。</p>
+      <button class="primary" id="btnPractice">从练习题开始 · 分步学画三视图</button>
+    </div>
+
+    <div class="home-grid">
+      <div class="upload-card" id="uploadCard">
+        <div class="upload-head">
+          <div><span class="step-label">01 / 导入图纸</span><h2>上传三视图图片</h2></div>
+          <span class="hint">JPG · PNG · WebP</span>
+        </div>
+        <label class="drop" id="dropZone" for="fileInput" role="button" tabindex="0">
+          <input type="file" id="fileInput" accept="image/*" hidden />
+          <span class="drop-icon" aria-hidden="true">＋</span>
+          <span class="drop-main">从相册 / 文件选择图片</span>
+          <span class="drop-sub">建议正对图纸拍摄，尽量避免阴影与透视倾斜</span>
+        </label>
+        <div class="upload-source-actions">
+          <button class="ghost" id="uploadCamera" type="button">拍照上传</button>
+          <span class="hint">也可拖入图片；更换图片可重新选择相册照片</span>
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden />
+        </div>
+        <div id="uploadImportStatus" class="upload-import-status" role="status" hidden><span>正在读取图片…</span><button class="ghost" id="uploadCancelImport">取消读取</button></div>
+        <div id="uploadImageEditor" class="upload-image-editor" hidden>
+          <div class="upload-image-toolbar"><span>用 ＋ / − 缩放；框选模式拖动选框，移动模式拖动图片</span><div><button class="ghost" id="uploadReplaceImage">更换图片</button><button class="ghost" id="uploadImagePan" aria-pressed="false">移动图片</button><button class="mini" id="uploadImageZoomOut" aria-label="缩小上传图片">−</button><output id="uploadImageZoomValue" aria-live="polite">100%</output><button class="ghost" id="uploadImageFit">适合窗口</button><button class="mini" id="uploadImageZoomIn" aria-label="放大上传图片">＋</button></div></div>
+          <div class="upload-preview-scroll"><div class="upload-preview-image"><canvas id="previewCanvas" class="preview" hidden></canvas><img id="uploadOriginalPreview" alt="上传图纸原图" decoding="async" draggable="false" hidden/><svg id="uploadSelectionOverlay" aria-hidden="true"></svg></div></div>
+        </div>
+        <div id="recogBox" class="recog" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 工作区 -->
+  <div id="work" class="work" hidden>
+    <div class="work-head">
+      <button class="back" id="btnBack">← 返回选图</button>
+      <h2 id="workTitle">三视图转立体图</h2>
+      <span id="qTag"></span>
+      <div class="picker">
+        <span id="qMethods"></span>
+        <button class="mini" id="btnPrev" title="上一题">‹</button>
+        <span id="qIdx">1 / 4</span>
+        <button class="mini" id="btnNext" title="下一题">›</button>
+        <label class="q-select-label" for="qSelect">练习题</label><select id="qSelect" class="qsel"></select>
+      </div>
+    </div>
+
+    <div id="uploadModelStatus" class="upload-analysis-status" role="status" hidden><span></span><button class="ghost" id="uploadCancelModel">取消更新</button></div>
+    <div class="work-grid">
+      <!-- 左：图形区 -->
+      <div class="pane">
+        <div class="pane-head">
+          <h3>视图</h3>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div id="viewsArea" class="views"></div>
+
+      </div>
+
+    <div class="pane model-pane">
+      <div class="pane-head">
+        <h3 id="uploadModelHeading">三维实体</h3>
+        <span class="hint">拖动旋转 · 双指缩放 / 平移（鼠标滚轮缩放）</span>
+      </div>
+      <div id="uploadModelVerification" hidden></div>
+      <div id="stage" class="stage"></div>
+      <div class="stage-foot">
+        <button class="mini" id="btnReset" title="复位视角">复位</button>
+        <label class="chk"><input type="checkbox" id="chkWire" /> 显示棱线</label>
+        <label class="chk"><input type="checkbox" id="chkAxes" /> 坐标轴</label>
+        <span class="dims" id="dimsLabel"></span>
+      </div>
+    </div>
+
+    </div>
+    <div id="solutionArea" class="solution pane" hidden></div>
+
+
+  </div>
+</section>
+
+<!-- ============================================ 原理方法集锦 -->
+<section id="view-methods" class="view" hidden>
+  <div class="bank-head">
+    <h1>原理与方法集锦</h1>
+    <p class="home-sub">
+      按《机械制图（非机类）（第四版）》（冯涓、杨惠英、王玉坤，清华大学出版社）的方法体系组织：
+      先讲投影规律，再讲读图方法，然后讲截交线、相贯线的作图手段。每个方法配 3 个可点击的例子。
+    </p>
+  </div>
+  <div id="methodsList" class="methods"></div>
+</section>
+
+<!-- ============================================ 错题本 -->
+<section id="view-bank" class="view" hidden>
+  <div class="bank-head">
+    <h1>错题本</h1>
+    <p class="home-sub">点任意卡片回到学习模式，加载该题的分步演示。</p>
+    <div class="bank-tools">
+      <button class="ghost" id="btnExport">导出 JSON</button>
+      <button class="ghost danger" id="btnClearBank">清空错题本</button>
+    </div>
+  </div>
+  <div id="bankList" class="bank-list"></div>
+  <p class="bank-empty" id="bankEmpty">还没有收集的错题。在上传或做题后点「是」即可存入。</p>
+</section>
+</main>
+
+<!-- ============================================ 存入错题本 对话框 -->
+<dialog id="askDialog" class="dlg">
+  <form method="dialog">
+    <h3>要存入错题题库吗？</h3>
+    <p id="askWhat">当前题目：</p>
+    <div class="dlg-actions">
+      <button value="yes" class="primary">是，存入错题本</button>
+      <button value="no" class="ghost">不用了</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="./js/upload-startup.js"></script>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

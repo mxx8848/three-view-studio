@@ -1,0 +1,10 @@
+node_modules/
+data/
+学习记录/
+.env
+.env.*
+*.db
+*.db-wal
+*.db-shm
+*.log
+test/artifacts/

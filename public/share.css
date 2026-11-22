@@ -1,0 +1,10 @@
+/* 仅由独立分享实例加载。 */
+html[data-share-only] .modes,
+html[data-share-only] .anon,
+html[data-share-only] #btnPractice,
+html[data-share-only] #view-methods,
+html[data-share-only] #view-bank,
+html[data-share-only] #askDialog,
+html[data-share-only] .picker {
+  display: none !important;
+}
